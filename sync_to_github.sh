@@ -13,7 +13,7 @@ if [ -z "$1" ]; then
     echo ""
     echo "📝 Steps to create repository:"
     echo "1. Go to https://github.com/new"
-    echo "2. Name your repository (e.g., 'aiqtoolkit-complete')"
+    echo "2. Name your repository: 'aiqtoolkit-nvidia'"
     echo "3. Make it Public"
     echo "4. Don't initialize with README"
     echo "5. Copy the repository URL and run this script"
