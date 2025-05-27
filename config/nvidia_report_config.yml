@@ -1,0 +1,29 @@
+general:
+  front_end:
+    _type: fastapi
+    port: 8000
+    host: "0.0.0.0"
+    cors_origins: ["*"]
+    
+functions:
+  nvidia_report_generator:
+    _type: custom
+    module: nvidia_report_integration
+    class_name: NVIDIAReportGenerator
+    endpoint: "https://jupyter0-s1ondnjfx.brevlab.com"
+    description: "Generate structured reports using NVIDIA LangChain"
+
+llms:
+  nvidia_llm:
+    _type: custom  
+    api_base: "https://jupyter0-s1ondnjfx.brevlab.com/api"
+    model_name: "nvidia/llama-3.1-8b-instruct"
+    temperature: 0.1
+
+workflow:
+  _type: custom
+  name: nvidia_report_workflow
+  components:
+    - llm: nvidia_llm
+    - function: nvidia_report_generator
+  description: "Generate structured reports using NVIDIA infrastructure"

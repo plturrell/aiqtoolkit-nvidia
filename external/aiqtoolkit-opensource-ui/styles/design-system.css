@@ -1,0 +1,198 @@
+/**
+ * AIQToolkit Design System v2.0
+ * Inspired by Human Interface Guidelines & Jony Ive's Design Philosophy
+ * 
+ * Principles:
+ * - Clarity: Every element serves a clear purpose
+ * - Deference: UI defers to content, never competes
+ * - Depth: Meaningful layering and hierarchy
+ */
+
+:root {
+  /* === SEMANTIC COLOR SYSTEM === */
+  /* Primary Content Colors */
+  --color-content-primary: #1d1d1f;
+  --color-content-secondary: #6e6e73;
+  --color-content-tertiary: #8e8e93;
+  --color-content-placeholder: #c7c7cc;
+  
+  /* Interactive Colors */
+  --color-accent: #007aff;
+  --color-accent-hover: #0056cc;
+  --color-accent-pressed: #004299;
+  --color-accent-subtle: rgba(0, 122, 255, 0.1);
+  
+  /* Status Colors */
+  --color-success: #34c759;
+  --color-warning: #ff9500;
+  --color-error: #ff3b30;
+  
+  /* Surface Colors */
+  --color-surface-primary: #ffffff;
+  --color-surface-secondary: #f2f2f7;
+  --color-surface-tertiary: #f8f8f8;
+  --color-surface-elevated: #ffffff;
+  --color-surface-overlay: rgba(0, 0, 0, 0.4);
+  
+  /* Border Colors */
+  --color-border-primary: #d1d1d6;
+  --color-border-secondary: #e5e5ea;
+  --color-border-focus: var(--color-accent);
+  
+  /* Dark Mode Overrides */
+  @media (prefers-color-scheme: dark) {
+    --color-content-primary: #ffffff;
+    --color-content-secondary: #ebebf0;
+    --color-content-tertiary: #a1a1a6;
+    --color-content-placeholder: #48484a;
+    
+    --color-surface-primary: #000000;
+    --color-surface-secondary: #1c1c1e;
+    --color-surface-tertiary: #2c2c2e;
+    --color-surface-elevated: #1c1c1e;
+    
+    --color-border-primary: #38383a;
+    --color-border-secondary: #2c2c2e;
+  }
+  
+  /* === SPACING SYSTEM === */
+  /* Based on 8pt grid - human visual perception optimized */
+  --spacing-xs: 4px;   /* 0.5 units */
+  --spacing-sm: 8px;   /* 1 unit */
+  --spacing-md: 16px;  /* 2 units */
+  --spacing-lg: 24px;  /* 3 units */
+  --spacing-xl: 32px;  /* 4 units */
+  --spacing-2xl: 48px; /* 6 units */
+  --spacing-3xl: 64px; /* 8 units */
+  
+  /* === TYPOGRAPHY SYSTEM === */
+  /* Three-tier hierarchy for clarity */
+  
+  /* Primary Text - Main content, user messages */
+  --text-primary-size: 16px;
+  --text-primary-weight: 400;
+  --text-primary-line-height: 1.5;
+  --text-primary-letter-spacing: -0.01em;
+  
+  /* Secondary Text - System messages, metadata */
+  --text-secondary-size: 14px;
+  --text-secondary-weight: 400;
+  --text-secondary-line-height: 1.4;
+  --text-secondary-letter-spacing: 0;
+  
+  /* Tertiary Text - Labels, captions, timestamps */
+  --text-tertiary-size: 12px;
+  --text-tertiary-weight: 500;
+  --text-tertiary-line-height: 1.3;
+  --text-tertiary-letter-spacing: 0.02em;
+  
+  /* Display Text - Headers, titles */
+  --text-display-size: 20px;
+  --text-display-weight: 600;
+  --text-display-line-height: 1.3;
+  --text-display-letter-spacing: -0.02em;
+  
+  /* === ELEVATION SYSTEM === */
+  /* Subtle depth that serves purpose */
+  --elevation-none: none;
+  --elevation-subtle: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --elevation-moderate: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --elevation-prominent: 0 8px 24px rgba(0, 0, 0, 0.12);
+  
+  /* === BORDER RADIUS === */
+  --radius-sm: 6px;   /* Small elements */
+  --radius-md: 12px;  /* Standard components */
+  --radius-lg: 16px;  /* Cards, panels */
+  --radius-full: 9999px; /* Pills, avatars */
+  
+  /* === TRANSITIONS === */
+  /* Natural, purposeful motion */
+  --transition-quick: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-standard: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-emphasized: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* === LAYOUT CONSTRAINTS === */
+  --content-max-width: 768px;
+  --sidebar-width: 280px;
+  --message-max-width: 680px;
+  --input-height: 56px;
+}
+
+/* === GLOBAL RESETS === */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+  font-size: var(--text-primary-size);
+  font-weight: var(--text-primary-weight);
+  line-height: var(--text-primary-line-height);
+  letter-spacing: var(--text-primary-letter-spacing);
+  color: var(--color-content-primary);
+  background-color: var(--color-surface-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* === UTILITY CLASSES === */
+.text-primary {
+  font-size: var(--text-primary-size);
+  font-weight: var(--text-primary-weight);
+  line-height: var(--text-primary-line-height);
+  color: var(--color-content-primary);
+}
+
+.text-secondary {
+  font-size: var(--text-secondary-size);
+  font-weight: var(--text-secondary-weight);
+  line-height: var(--text-secondary-line-height);
+  color: var(--color-content-secondary);
+}
+
+.text-tertiary {
+  font-size: var(--text-tertiary-size);
+  font-weight: var(--text-tertiary-weight);
+  line-height: var(--text-tertiary-line-height);
+  color: var(--color-content-tertiary);
+  text-transform: uppercase;
+}
+
+.text-display {
+  font-size: var(--text-display-size);
+  font-weight: var(--text-display-weight);
+  line-height: var(--text-display-line-height);
+  color: var(--color-content-primary);
+}
+
+/* Surface utilities */
+.surface-primary { background-color: var(--color-surface-primary); }
+.surface-secondary { background-color: var(--color-surface-secondary); }
+.surface-elevated { background-color: var(--color-surface-elevated); }
+
+/* Spacing utilities */
+.space-xs { padding: var(--spacing-xs); }
+.space-sm { padding: var(--spacing-sm); }
+.space-md { padding: var(--spacing-md); }
+.space-lg { padding: var(--spacing-lg); }
+
+/* === FOCUS STATES === */
+.focusable {
+  outline: none;
+  transition: box-shadow var(--transition-quick);
+}
+
+.focusable:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-accent-subtle);
+}
+
+/* === REDUCED MOTION === */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

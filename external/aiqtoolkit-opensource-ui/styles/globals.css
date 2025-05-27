@@ -1,0 +1,220 @@
+/* Import our unified design system */
+@import './design-system.css';
+
+/* Tailwind CSS for utility classes only */
+@tailwind base;
+@tailwind components; 
+@tailwind utilities;
+
+/* === CUSTOM SCROLLBAR === */
+/* Invisible by default, appears on hover - less visual noise */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-content-placeholder);
+  border-radius: var(--radius-full);
+  opacity: 0;
+  transition: opacity var(--transition-quick);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-content-tertiary);
+  opacity: 1;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  opacity: 0.6;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-content-placeholder) transparent;
+}
+
+/* === CODE BLOCKS === */
+/* Clean, focused code presentation */
+pre {
+  background: var(--color-surface-tertiary);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  overflow-x: auto;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Segoe UI Mono', Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+pre:has(div.codeblock) {
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  pre {
+    width: calc(100vw - var(--spacing-lg));
+    margin: 0 calc(-1 * var(--spacing-md));
+  }
+}
+
+/* === MARKDOWN OVERRIDES === */
+/* Clean, readable content styling */
+.prose {
+  max-width: none !important;
+  color: var(--color-content-primary);
+}
+
+.prose p {
+  margin: var(--spacing-sm) 0;
+  color: var(--color-content-primary);
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  color: var(--color-content-primary);
+  font-weight: var(--text-display-weight);
+  margin: var(--spacing-lg) 0 var(--spacing-sm) 0;
+}
+
+.prose h1 { font-size: 24px; }
+.prose h2 { font-size: 20px; }
+.prose h3 { font-size: 18px; }
+
+.prose ul, .prose ol {
+  margin: var(--spacing-sm) 0;
+  padding-left: var(--spacing-lg);
+}
+
+.prose li {
+  margin: var(--spacing-xs) 0;
+}
+
+.prose a {
+  color: var(--color-accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--transition-quick);
+}
+
+.prose a:hover {
+  border-bottom-color: var(--color-accent);
+}
+
+.prose blockquote {
+  border-left: 3px solid var(--color-accent);
+  padding-left: var(--spacing-md);
+  margin: var(--spacing-md) 0;
+  color: var(--color-content-secondary);
+  font-style: italic;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--spacing-md) 0;
+}
+
+.prose th, .prose td {
+  border: 1px solid var(--color-border-secondary);
+  padding: var(--spacing-sm);
+  text-align: left;
+}
+
+.prose th {
+  background: var(--color-surface-secondary);
+  font-weight: 600;
+}
+
+/* === UTILITY CLASSES === */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* === ANIMATIONS === */
+/* Purposeful, meaningful motion only */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s var(--transition-standard);
+}
+
+.animate-pulse-subtle {
+  animation: pulse 2s infinite;
+}
+
+/* === FOCUS MANAGEMENT === */
+/* Clear, consistent focus indicators */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Button and interactive element focus */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-accent-subtle);
+  outline: none;
+}
+
+/* === ACCESSIBILITY === */
+/* Ensure proper contrast and usability */
+@media (prefers-contrast: high) {
+  :root {
+    --color-content-secondary: var(--color-content-primary);
+    --color-border-primary: var(--color-content-primary);
+  }
+}
+
+/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* === PRINT STYLES === */
+@media print {
+  * {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+}

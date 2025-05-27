@@ -1,0 +1,229 @@
+version: '3.8'
+
+services:
+  # Digital Human Unity MVP Frontend
+  digital-human-frontend:
+    image: aiqtoolkit/digital-human-mvp:${DEPLOYMENT_ENV:-production}
+    container_name: digital-human-frontend
+    ports:
+      - "8080:80"
+    environment:
+      - BACKEND_URL=${BACKEND_URL:-ws://backend:8081/ws}
+      - API_URL=${API_URL:-http://backend:8081/api}
+      - AVATAR_URL=${AVATAR_URL:-https://api.readyplayer.me/v1/avatars/default.glb}
+      - METRICS_ENDPOINT=${METRICS_ENDPOINT:-http://metrics:9090/metrics}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    volumes:
+      - ./logs:/app/logs
+      - ./config:/app/config
+    networks:
+      - digital-human-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      - backend
+      - metrics
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.digital-human.rule=Host(`digital-human.local`)"
+      - "traefik.http.services.digital-human.loadbalancer.server.port=80"
+
+  # Backend API Service
+  backend:
+    image: aiqtoolkit/backend-api:${DEPLOYMENT_ENV:-production}
+    container_name: backend-api
+    ports:
+      - "8081:8081"
+    environment:
+      - NODE_ENV=${DEPLOYMENT_ENV:-production}
+      - PORT=8081
+      - WS_PORT=8081
+      - DB_HOST=${DB_HOST:-database}
+      - DB_PORT=5432
+      - DB_NAME=digital_human
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-password}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=6379
+      - AUTH_ENABLED=${AUTH_ENABLED:-false}
+      - AUTH_SECRET=${AUTH_SECRET:-your-secret-key}
+    volumes:
+      - ./backend/logs:/app/logs
+      - ./backend/uploads:/app/uploads
+    networks:
+      - digital-human-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - database
+      - redis
+
+  # Database
+  database:
+    image: postgres:15-alpine
+    container_name: digital-human-db
+    environment:
+      - POSTGRES_DB=digital_human
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - digital-human-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: digital-human-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - digital-human-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Metrics Collector
+  metrics:
+    image: prom/prometheus:latest
+    container_name: digital-human-metrics
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - digital-human-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: digital-human-grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    ports:
+      - "3000:3000"
+    networks:
+      - digital-human-network
+    restart: unless-stopped
+    depends_on:
+      - metrics
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: digital-human-nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - digital-human-network
+    restart: unless-stopped
+    depends_on:
+      - digital-human-frontend
+      - backend
+
+  # Filebeat for Log Shipping
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.11.0
+    container_name: digital-human-filebeat
+    user: root
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./logs:/var/log/digital-human:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - digital-human-network
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+
+  # Elasticsearch for Log Storage
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: digital-human-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - digital-human-network
+    restart: unless-stopped
+
+  # Kibana for Log Visualization
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: digital-human-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    networks:
+      - digital-human-network
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+
+networks:
+  digital-human-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+  elasticsearch_data:

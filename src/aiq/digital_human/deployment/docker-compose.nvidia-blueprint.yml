@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  # Digital Human Backend with NVIDIA Blueprint
+  digital-human-backend:
+    build:
+      context: ../../../
+      dockerfile: src/aiq/digital_human/deployment/Dockerfile.blueprint
+    environment:
+      - NVIDIA_API_KEY=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
+      - NVIDIA_BLUEPRINT_PATH=/blueprint
+      - PYTHONPATH=/blueprint:/app
+      - LOG_LEVEL=INFO
+      - ENABLE_GPU=true
+    volumes:
+      - /projects/digital-human:/blueprint:ro
+      - ./logs:/app/logs
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend UI
+  digital-human-frontend:
+    build:
+      context: ../ui/frontend
+      dockerfile: Dockerfile
+    environment:
+      - API_URL=http://digital-human-backend:8000
+      - NVIDIA_ENABLED=true
+    ports:
+      - "8080:80"
+    depends_on:
+      - digital-human-backend
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  # PostgreSQL for persistence
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=digital_human
+      - POSTGRES_USER=aiqtoolkit
+      - POSTGRES_PASSWORD=secure_password_change_in_production
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  # NGINX for load balancing and SSL
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - digital-human-backend
+      - digital-human-frontend
+
+  # Monitoring - Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+
+  # Monitoring - Grafana
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - grafana-data:/var/lib/grafana
+
+volumes:
+  redis-data:
+  postgres-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  default:
+    name: digital-human-network

@@ -1,0 +1,50 @@
+# Backend Connector Prefab Setup
+
+This file contains instructions for creating a ready-to-use prefab of the Backend Connector.
+
+## Creating the Prefab
+
+1. Create an empty GameObject
+2. Add the BackendConnector component
+3. Configure default settings:
+   - Backend URL: http://localhost:8000
+   - WebSocket URL: ws://localhost:8000/ws
+   - Reconnect Delay: 3 seconds
+   - Max Reconnect Attempts: 5
+
+4. Create a Canvas child object for UI (optional)
+5. Add the following UI elements:
+   - Connection Status Text
+   - Message Input Field
+   - Send Button
+   - Response Display Text
+
+6. Add the BackendConnectorExample script
+7. Link all UI elements in the inspector
+
+8. Save as prefab: "BackendConnectorPrefab"
+
+## Prefab Structure
+
+BackendConnector (GameObject)
+├── BackendConnector (Component)
+├── BackendConnectorExample (Component)
+└── Canvas
+    ├── ConnectionStatus (Text)
+    ├── MessageInput (InputField)
+    ├── SendButton (Button)
+    └── ResponseDisplay (Text)
+
+## Usage
+
+1. Drag the prefab into your scene
+2. Configure backend URLs if needed
+3. Add authentication tokens if required
+4. Play the scene - connection will establish automatically
+
+## Integration Tips
+
+- Place the prefab in a persistent scene for multi-scene projects
+- Use DontDestroyOnLoad for persistent connections
+- Subscribe to events in your game logic scripts
+- Use the example script as a template for custom implementations

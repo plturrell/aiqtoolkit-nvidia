@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Human - NVIDIA Blueprint Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #76b900;
+            padding-bottom: 10px;
+        }
+        .avatar-container {
+            width: 640px;
+            height: 480px;
+            background: #000;
+            margin: 20px auto;
+            border-radius: 10px;
+            position: relative;
+        }
+        .chat-interface {
+            margin-top: 20px;
+        }
+        .chat-messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .user-message {
+            background: #e3f2fd;
+            text-align: right;
+        }
+        .ai-message {
+            background: #f0f0f0;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #76b900;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #5a8f00;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .status.connected {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .emotion-selector {
+            margin: 10px 0;
+        }
+        .nvidia-badge {
+            background: #76b900;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>
+            Digital Human Test
+            <span class="nvidia-badge">NVIDIA Blueprint</span>
+        </h1>
+        
+        <div class="status" id="status">Connecting...</div>
+        
+        <div class="avatar-container" id="avatarContainer">
+            <canvas id="avatarCanvas" width="640" height="480"></canvas>
+        </div>
+        
+        <div class="chat-interface">
+            <div class="chat-messages" id="chatMessages"></div>
+            
+            <div class="emotion-selector">
+                <label>Emotion: </label>
+                <select id="emotionSelect">
+                    <option value="neutral">Neutral</option>
+                    <option value="happy">Happy</option>
+                    <option value="concerned">Concerned</option>
+                    <option value="professional">Professional</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <input type="text" id="messageInput" placeholder="Ask about investments, portfolio, or financial planning...">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        let ws = null;
+        
+        // Initialize WebSocket connection
+        function initWebSocket() {
+            ws = new WebSocket(`ws://localhost:8000/ws`);
+            
+            ws.onopen = () => {
+                updateStatus('Connected to Digital Human', 'connected');
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleResponse(data);
+            };
+            
+            ws.onerror = (error) => {
+                updateStatus('Connection error', 'error');
+                console.error('WebSocket error:', error);
+            };
+            
+            ws.onclose = () => {
+                updateStatus('Disconnected', 'error');
+                setTimeout(initWebSocket, 5000); // Reconnect after 5 seconds
+            };
+        }
+        
+        // Send message
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const emotion = document.getElementById('emotionSelect').value;
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Display user message
+            addMessage(message, 'user');
+            
+            // Send via WebSocket
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    text: message,
+                    emotion: emotion
+                }));
+            } else {
+                // Fallback to HTTP API
+                sendHTTPMessage(message, emotion);
+            }
+            
+            input.value = '';
+        }
+        
+        // HTTP fallback
+        async function sendHTTPMessage(message, emotion) {
+            try {
+                const response = await fetch(`${API_URL}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: message,
+                        emotion: emotion
+                    })
+                });
+                
+                const data = await response.json();
+                handleResponse({
+                    type: 'response',
+                    ...data
+                });
+            } catch (error) {
+                console.error('HTTP request error:', error);
+                updateStatus('Error sending message', 'error');
+            }
+        }
+        
+        // Handle response
+        function handleResponse(data) {
+            if (data.type === 'response_chunk' || data.type === 'response') {
+                // Add AI message
+                if (data.text) {
+                    addMessage(data.text, 'ai');
+                }
+                
+                // Update avatar if frame data exists
+                if (data.avatar_frame) {
+                    updateAvatar(data.avatar_frame);
+                }
+                
+                // Play audio if available
+                if (data.audio_chunk || data.audio_url) {
+                    playAudio(data.audio_chunk || data.audio_url);
+                }
+            } else if (data.type === 'error') {
+                updateStatus(`Error: ${data.message}`, 'error');
+            }
+        }
+        
+        // Add message to chat
+        function addMessage(text, sender) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            messageDiv.textContent = text;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        // Update avatar canvas
+        function updateAvatar(frameData) {
+            const canvas = document.getElementById('avatarCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Decode and render frame data
+            // This is a placeholder - actual implementation depends on frame format
+            if (frameData.startsWith('data:image')) {
+                const img = new Image();
+                img.onload = () => {
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                };
+                img.src = frameData;
+            }
+        }
+        
+        // Play audio
+        function playAudio(audioData) {
+            const audio = new Audio();
+            if (audioData.startsWith('data:audio') || audioData.startsWith('http')) {
+                audio.src = audioData;
+                audio.play();
+            }
+        }
+        
+        // Update status
+        function updateStatus(message, type) {
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = message;
+            statusElement.className = `status ${type}`;
+        }
+        
+        // Check NVIDIA status
+        async function checkNvidiaStatus() {
+            try {
+                const response = await fetch(`${API_URL}/nvidia/status`);
+                const data = await response.json();
+                console.log('NVIDIA Status:', data);
+            } catch (error) {
+                console.error('Failed to check NVIDIA status:', error);
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initWebSocket();
+            checkNvidiaStatus();
+            
+            // Enter key to send
+            document.getElementById('messageInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

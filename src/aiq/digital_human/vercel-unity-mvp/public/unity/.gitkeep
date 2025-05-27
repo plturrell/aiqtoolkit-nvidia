@@ -1,0 +1,6 @@
+# Unity WebGL build files go here
+# Copy your Unity build output to this directory:
+# - DigitalHumanMVP.loader.js
+# - DigitalHumanMVP.data
+# - DigitalHumanMVP.framework.js
+# - DigitalHumanMVP.wasm

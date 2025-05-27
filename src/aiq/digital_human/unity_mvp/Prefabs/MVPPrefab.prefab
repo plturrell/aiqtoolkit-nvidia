@@ -1,0 +1,141 @@
+# Digital Human Unity MVP Prefab
+# This is a text description of the Unity prefab structure
+# In Unity, this would be a .prefab file
+
+GameObject: DigitalHumanMVP
+├── Transform
+│   └── Position: (0, 0, 0)
+│   └── Rotation: (0, 0, 0)
+│   └── Scale: (1, 1, 1)
+├── ProductionMVP (Script)
+│   └── Backend Connector: [Reference to ProductionBackendConnector]
+│   └── Avatar Manager: [Reference to ProductionAvatarManager]
+│   └── Lip Sync: [Reference to ProductionLipSync]
+│   └── Chat UI: [Reference to ProductionChatUI]
+│   └── Config: [Reference to ProductionConfig]
+│   └── Metrics: [Reference to ProductionMetrics]
+│   └── Logger: [Reference to ProductionLogger]
+│   └── Initialization Timeout: 30
+│   └── Max Retry Attempts: 3
+│   └── Retry Delay: 5
+├── ProductionBackendConnector (Script)
+├── ProductionAvatarManager (Script)
+├── ProductionLipSync (Script)
+├── ProductionConfig (Script)
+├── ProductionMetrics (Script)
+└── ProductionLogger (Script)
+
+GameObject: UI
+├── Canvas
+│   └── Canvas (Component)
+│       └── Render Mode: Screen Space - Overlay
+│       └── Pixel Perfect: true
+│   └── Canvas Scaler (Component)
+│       └── UI Scale Mode: Scale With Screen Size
+│       └── Reference Resolution: (1920, 1080)
+│   └── Graphic Raycaster (Component)
+├── ChatPanel
+│   └── Rect Transform
+│       └── Anchors: (0, 0) to (1, 1)
+│       └── Offset: (20, 20, -20, -20)
+│   └── ProductionChatUI (Script)
+│   └── Image (Component)
+│       └── Color: (0.1, 0.1, 0.1, 0.95)
+│   ├── ScrollView
+│   │   └── Viewport
+│   │       └── Content
+│   │           └── Vertical Layout Group
+│   │           └── Content Size Fitter
+│   ├── InputPanel
+│   │   └── Horizontal Layout Group
+│   │   ├── InputField (TMP)
+│   │   └── SendButton
+│   ├── TypingIndicator
+│   ├── OfflineIndicator
+│   └── ErrorPanel
+
+GameObject: AvatarContainer
+├── Transform
+│   └── Position: (0, 0, 0)
+├── AvatarManager (Component Reference)
+└── [Ready Player Me Avatar will be loaded here]
+
+GameObject: AudioSystem
+├── Audio Source (Component)
+│   └── Play On Awake: false
+│   └── Spatial Blend: 0 (2D)
+└── LipSync (Component Reference)
+
+GameObject: EventSystem
+├── Event System (Component)
+└── Standalone Input Module (Component)
+
+# Configuration Defaults
+DefaultConfiguration:
+  Backend:
+    WebSocketUrl: "ws://localhost:8080/ws"
+    RestApiUrl: "http://localhost:8080/api"
+    ConnectionTimeout: 10
+    ReconnectDelay: 5
+    MaxReconnectAttempts: 5
+    EnableHeartbeat: true
+    HeartbeatInterval: 30
+  
+  Avatar:
+    DefaultAvatarUrl: "https://api.readyplayer.me/v1/avatars/default.glb"
+    LoadTimeout: 30
+    EnableCaching: true
+    MaxCacheSize: 5
+    Quality: High
+    EnableLOD: true
+    LODDistances: [5, 10, 20]
+  
+  LipSync:
+    VolumeMultiplier: 1.0
+    Smoothing: 0.1
+    EnableNoiseGate: true
+    NoiseGateThreshold: 0.01
+    EnableVisemeSmoothing: true
+    VisemeSmoothTime: 0.1
+    ProcessingMode: Realtime
+    AudioBufferSize: 2048
+    UpdateInterval: 0.016
+  
+  UI:
+    UserMessageColor: (0.2, 0.5, 1.0)
+    AIMessageColor: (0.3, 0.8, 0.3)
+    SystemMessageColor: (0.8, 0.8, 0.8)
+    MessageAnimationDuration: 0.3
+    MaxVisibleMessages: 50
+    EnableMessageAnimation: true
+    EnableTypingIndicator: true
+    TypingIndicatorDelay: 0.5
+    EnableAutoScroll: true
+    AutoScrollSpeed: 5
+  
+  Logging:
+    MinLogLevel: Info
+    EnableFileLogging: true
+    LogFilePath: "Logs/production.log"
+    MaxLogFileSize: 10485760
+    MaxLogFiles: 5
+    EnableConsoleLogging: true
+    EnableRemoteLogging: false
+  
+  Metrics:
+    Enabled: true
+    ReportingInterval: 60
+    EnablePerformanceMetrics: true
+    EnableNetworkMetrics: true
+    EnableUserMetrics: true
+    EnableErrorMetrics: true
+    MetricsEndpoint: "http://localhost:8080/api/metrics"
+  
+  Performance:
+    TargetFrameRate: 60
+    EnableVSync: true
+    VSyncCount: 1
+    QualityLevel: High
+    EnableDynamicQuality: true
+    MinFrameTime: 0.016
+    MaxFrameTime: 0.033

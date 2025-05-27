@@ -1,0 +1,449 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: digital-human-mvp
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: digital-human-config
+  namespace: digital-human-mvp
+data:
+  backend.url: "ws://backend-service:8081/ws"
+  api.url: "http://backend-service:8081/api"
+  avatar.url: "https://api.readyplayer.me/v1/avatars/default.glb"
+  metrics.endpoint: "http://metrics-service:9090/metrics"
+  log.level: "info"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: digital-human-secrets
+  namespace: digital-human-mvp
+type: Opaque
+data:
+  db.password: cG9zdGdyZXM= # postgres
+  auth.secret: eW91ci1zZWNyZXQta2V5 # your-secret-key
+  grafana.password: YWRtaW4= # admin
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: digital-human-mvp
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: digital-human-mvp
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: logs-pvc
+  namespace: digital-human-mvp
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: digital-human-frontend
+  namespace: digital-human-mvp
+  labels:
+    app: digital-human-frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: digital-human-frontend
+  template:
+    metadata:
+      labels:
+        app: digital-human-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: aiqtoolkit/digital-human-mvp:production
+        ports:
+        - containerPort: 80
+        env:
+        - name: BACKEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: digital-human-config
+              key: backend.url
+        - name: API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: digital-human-config
+              key: api.url
+        - name: AVATAR_URL
+          valueFrom:
+            configMapKeyRef:
+              name: digital-human-config
+              key: avatar.url
+        - name: METRICS_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: digital-human-config
+              key: metrics.endpoint
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: digital-human-config
+              key: log.level
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: logs
+        persistentVolumeClaim:
+          claimName: logs-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-api
+  namespace: digital-human-mvp
+  labels:
+    app: backend-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend-api
+  template:
+    metadata:
+      labels:
+        app: backend-api
+    spec:
+      containers:
+      - name: backend
+        image: aiqtoolkit/backend-api:production
+        ports:
+        - containerPort: 8081
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "8081"
+        - name: DB_HOST
+          value: "postgres-service"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "digital_human"
+        - name: DB_USER
+          value: "postgres"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: digital-human-secrets
+              key: db.password
+        - name: REDIS_HOST
+          value: "redis-service"
+        - name: REDIS_PORT
+          value: "6379"
+        - name: AUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: digital-human-secrets
+              key: auth.secret
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8081
+          initialDelaySeconds: 45
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 10
+      volumes:
+      - name: logs
+        persistentVolumeClaim:
+          claimName: logs-pvc
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: digital-human-mvp
+spec:
+  serviceName: "postgres"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "digital_human"
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: digital-human-secrets
+              key: db.password
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: digital-human-mvp
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        command: ["redis-server", "--appendonly", "yes"]
+        ports:
+        - containerPort: 6379
+        volumeMounts:
+        - name: redis-storage
+          mountPath: /data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+      volumes:
+      - name: redis-storage
+        persistentVolumeClaim:
+          claimName: redis-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: digital-human-mvp
+spec:
+  selector:
+    app: digital-human-frontend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: digital-human-mvp
+spec:
+  selector:
+    app: backend-api
+  ports:
+  - protocol: TCP
+    port: 8081
+    targetPort: 8081
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: digital-human-mvp
+spec:
+  selector:
+    app: postgres
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: digital-human-mvp
+spec:
+  selector:
+    app: redis
+  ports:
+  - protocol: TCP
+    port: 6379
+    targetPort: 6379
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: digital-human-ingress
+  namespace: digital-human-mvp
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+spec:
+  tls:
+  - hosts:
+    - digital-human.example.com
+    secretName: digital-human-tls
+  rules:
+  - host: digital-human.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: frontend-hpa
+  namespace: digital-human-mvp
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: digital-human-frontend
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend-hpa
+  namespace: digital-human-mvp
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend-api
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: digital-human-metrics
+  namespace: digital-human-mvp
+spec:
+  selector:
+    matchLabels:
+      app: digital-human-frontend
+  endpoints:
+  - port: 80
+    path: /metrics
+    interval: 30s

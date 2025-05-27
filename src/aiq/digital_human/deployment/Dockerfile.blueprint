@@ -1,0 +1,63 @@
+# Dockerfile for Digital Human with NVIDIA Blueprint
+FROM nvcr.io/nvidia/pytorch:23.10-py3
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    wget \
+    curl \
+    libssl-dev \
+    libffi-dev \
+    python3-dev \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    libgl1-mesa-glx \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy AIQToolkit code
+COPY src/ /app/src/
+COPY requirements.txt /app/
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install NVIDIA specific packages
+RUN pip install --no-cache-dir \
+    nvidia-riva-client \
+    nvidia-tao \
+    tritonclient[all] \
+    transformers \
+    accelerate
+
+# Copy Digital Human specific files
+COPY src/aiq/digital_human/ /app/src/aiq/digital_human/
+
+# Set environment variables
+ENV NVIDIA_API_KEY=${NVIDIA_API_KEY}
+ENV NVIDIA_BLUEPRINT_PATH=/blueprint
+ENV PYTHONPATH=/blueprint:/app/src:$PYTHONPATH
+ENV CUDA_VISIBLE_DEVICES=0
+ENV LOG_LEVEL=INFO
+
+# Create directories for logs and data
+RUN mkdir -p /app/logs /app/data /app/cache
+
+# Copy startup script
+COPY src/aiq/digital_human/deployment/start_blueprint.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8000/health || exit 1
+
+# Expose ports
+EXPOSE 8000 8001 8002
+
+# Start the application
+CMD ["/app/start.sh"]

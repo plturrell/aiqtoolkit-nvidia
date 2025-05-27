@@ -1,0 +1,39 @@
+# Vercel ignore file for Beautiful AIQToolkit UI
+
+# Development files
+.env.local
+.env
+*.log
+.backup/
+
+# Build artifacts  
+.next/
+node_modules/
+.cache/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git files
+.git/
+
+# Large files
+ui.log
+frontend.log
+*.tsbuildinfo
+
+# Not needed for deployment
+__tests__/
+vitest.config.ts
+.trigger-rebuild
+
+# Development scripts
+start-beautiful-ui.sh
+quickstart.sh
