@@ -202,11 +202,21 @@ Our implementation includes rigorous mathematical analysis with:
 
 ## Parameter Calibration & Boundary Management
 
-### Rigorous Parameter Framework
+### Enhanced Parameter Framework
 
 **Implementation:** `src/aiq/reasoning/dspy_parameter_calibration.py`
 
-Our DSPy implementation now includes comprehensive parameter management:
+**What We Previously Had:**
+- Basic parameter settings (temperature=0.7, max_tokens=2000)
+- DSPy optimization with BootstrapFewShot (max_rounds=3, max_examples=10)
+- Simple learning rate and training configurations
+
+**What We Added for Academic Rigor:**
+- Comprehensive boundary validation and enforcement
+- Advanced calibration methods with theoretical guarantees
+- Adaptive optimization with convergence criteria
+
+Our enhanced DSPy implementation now includes:
 
 **Parameter Boundaries:**
 - **Temperature:** 0.1 ≤ T ≤ 2.0 (default: 0.7)
