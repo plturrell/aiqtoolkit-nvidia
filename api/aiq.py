@@ -26,8 +26,8 @@ class handler(BaseHTTPRequestHandler):
             response = self.get_available_components()
         elif endpoint == 'workflows':
             response = self.get_available_workflows()
-        elif endpoint == 'agents':
-            response = self.get_available_agents()
+        elif endpoint == 'reasoning':
+            response = self.get_available_reasoning_systems()
         elif endpoint == 'health':
             response = self.get_health_status()
         else:
@@ -102,7 +102,7 @@ class handler(BaseHTTPRequestHandler):
                 "/api/aiq/info": "System information",
                 "/api/aiq/components": "Available components",
                 "/api/aiq/workflows": "Available workflows", 
-                "/api/aiq/agents": "Available agents",
+                "/api/aiq/reasoning": "Reasoning systems overview",
                 "/api/aiq/health": "System health status",
                 "/api/aiq/run": "Execute workflow (POST)",
                 "/api/aiq/validate": "Validate configuration (POST)",
@@ -123,12 +123,15 @@ class handler(BaseHTTPRequestHandler):
         try:
             # Try to import AIQ components
             components = {
-                "agents": [
-                    "react_agent",
-                    "rewoo_agent", 
+                "reasoning_systems": [
+                    "react_reasoning",
+                    "rewoo_reasoning", 
                     "reasoning_agent",
-                    "tool_calling_agent",
-                    "mixture_of_agents"
+                    "tool_calling_reasoning",
+                    "neural_symbolic_hybrid",
+                    "mcts_probabilistic",
+                    "jena_semantic",
+                    "dspy_self_improving"
                 ],
                 "llms": [
                     "openai_llm",
@@ -166,7 +169,29 @@ class handler(BaseHTTPRequestHandler):
             return {
                 "status": "success",
                 "components": components,
-                "total_components": sum(len(v) for v in components.values())
+                "total_components": sum(len(v) for v in components.values()),
+                "reasoning_architecture": {
+                    "core_systems": [
+                        "ReAct - Iterative reasoning with observation",
+                        "ReWOO - Plan-first reasoning without observation", 
+                        "Reasoning Agent - Function augmentation with transparency",
+                        "Tool Calling - Native LLM function integration"
+                    ],
+                    "advanced_systems": [
+                        "Neural-Symbolic - Hybrid reasoning with knowledge graphs",
+                        "MCTS - Probabilistic optimization for financial decisions",
+                        "Jena - Semantic web and RDF/OWL reasoning",
+                        "DSPy - Self-improving and automatic prompt optimization"
+                    ],
+                    "capabilities": [
+                        "Transparent reasoning chains",
+                        "Multi-hop logical inference", 
+                        "Financial portfolio optimization",
+                        "Knowledge graph construction",
+                        "Automatic prompt tuning",
+                        "GPU-accelerated processing"
+                    ]
+                }
             }
         except Exception as e:
             return {
@@ -213,36 +238,70 @@ class handler(BaseHTTPRequestHandler):
             ]
         }
 
-    def get_available_agents(self):
-        """Get detailed information about available agents"""
+    def get_available_reasoning_systems(self):
+        """Get detailed information about available reasoning systems"""
         return {
             "status": "success",
-            "agents": {
+            "reasoning_systems": {
                 "react": {
-                    "name": "ReAct Agent",
-                    "description": "Reasoning and Acting agent that combines thinking and action",
-                    "capabilities": ["reasoning", "tool_use", "self_reflection"],
+                    "name": "ReAct Reasoning",
+                    "description": "Iterative reasoning and acting with observation loops",
+                    "capabilities": ["adaptive_reasoning", "tool_integration", "error_recovery", "transparent_process"],
+                    "use_cases": ["research_tasks", "interactive_problem_solving", "multi_step_analysis"],
                     "example_config": "examples/agents/react/configs/config.yml"
                 },
                 "rewoo": {
-                    "name": "ReWOO Agent", 
-                    "description": "Reasoning WithOut Observation - planning-based agent",
-                    "capabilities": ["planning", "execution", "decomposition"],
+                    "name": "ReWOO Reasoning", 
+                    "description": "Plan-first reasoning without intermediate observations",
+                    "capabilities": ["comprehensive_planning", "parallel_execution", "cost_efficiency", "deterministic_paths"],
+                    "use_cases": ["batch_processing", "structured_workflows", "cost_sensitive_operations"],
                     "example_config": "examples/agents/rewoo/configs/config.yml"
                 },
-                "reasoning": {
+                "reasoning_agent": {
                     "name": "Reasoning Agent",
-                    "description": "Transparent reasoning agent with step-by-step analysis",
-                    "capabilities": ["transparent_reasoning", "confidence_scoring", "bias_detection"],
+                    "description": "Function augmentation with transparent reasoning capabilities",
+                    "capabilities": ["function_enhancement", "reasoning_chains", "tool_awareness", "transparency"],
+                    "use_cases": ["ai_transparency", "audit_requirements", "complex_analysis"],
                     "example_config": "examples/agents/react/configs/config-reasoning.yml"
                 },
                 "tool_calling": {
-                    "name": "Tool Calling Agent",
-                    "description": "Agent specialized in function and tool calling",
-                    "capabilities": ["function_calling", "api_integration", "tool_chaining"],
+                    "name": "Tool Calling Reasoning",
+                    "description": "Native LLM function calling with integrated reasoning",
+                    "capabilities": ["native_integration", "parallel_execution", "parameter_optimization", "efficiency"],
+                    "use_cases": ["modern_llm_integration", "api_orchestration", "real_time_systems"],
                     "example_config": "examples/agents/tool_calling/configs/config.yml"
+                },
+                "neural_symbolic": {
+                    "name": "Neural-Symbolic Hybrid",
+                    "description": "Combines neural networks with symbolic reasoning and knowledge graphs",
+                    "capabilities": ["hybrid_reasoning", "knowledge_graphs", "multi_hop_inference", "explainable_results"],
+                    "use_cases": ["research_discovery", "knowledge_management", "complex_query_answering"],
+                    "documentation": "docs/source/workflows/reasoning/neural-symbolic.md"
+                },
+                "mcts": {
+                    "name": "Monte Carlo Tree Search",
+                    "description": "GPU-accelerated probabilistic reasoning for optimization under uncertainty",
+                    "capabilities": ["probabilistic_optimization", "financial_modeling", "risk_assessment", "gpu_acceleration"],
+                    "use_cases": ["portfolio_optimization", "strategic_planning", "uncertainty_quantification"],
+                    "documentation": "docs/source/workflows/reasoning/mcts-reasoning.md"
+                },
+                "jena": {
+                    "name": "Apache Jena Reasoning",
+                    "description": "Semantic web reasoning with RDF/OWL knowledge graphs",
+                    "capabilities": ["semantic_reasoning", "sparql_queries", "ontology_management", "knowledge_integration"],
+                    "use_cases": ["knowledge_management", "semantic_search", "data_integration"],
+                    "documentation": "docs/source/workflows/document-management/jena-integration.md"
+                },
+                "dspy": {
+                    "name": "DSPy Self-Improving",
+                    "description": "Automatic prompt optimization and self-improving reasoning",
+                    "capabilities": ["prompt_optimization", "automatic_tuning", "performance_tracking", "iterative_improvement"],
+                    "use_cases": ["production_ai_systems", "prompt_engineering", "performance_optimization"],
+                    "documentation": "docs/source/workflows/reasoning/dspy-reasoning.md"
                 }
-            }
+            },
+            "integration_guide": "docs/source/workflows/reasoning/integration-guide.md",
+            "architecture_overview": "docs/source/workflows/reasoning/index.md"
         }
 
     def get_health_status(self):
